@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Stock Prediction Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Plotly for Charts -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <h2><span class="icon">📈</span> AI Predictor</h2>
+
+            <div class="control-group">
+                <label>Data Mode</label>
+                <div class="toggle-switch">
+                    <button id="btn-historical" class="active">STOCKS</button>
+                    <button id="btn-realtime">Global Ticker</button>
+                </div>
+            </div>
+
+            <div class="control-group" id="realtime-controls" style="display: none;">
+                <label>Stock Ticker</label>
+                <input type="text" id="ticker-input" value="AAPL" placeholder="e.g. AAPL, TSLA, INFY.NS">
+                <button id="btn-fetch-live" class="action-btn">Fetch Data</button>
+            </div>
+
+            <div class="control-group">
+                <label>Price Alert Setup 🔔</label>
+                <input type="number" id="alert-price" placeholder="Trigger Price" style="margin-bottom: 5px;">
+                <button id="btn-set-alert" class="action-btn secondary">Set Alert</button>
+            </div>
+
+            <div class="control-group">
+                <label>Time Filter</label>
+                <select id="time-filter">
+                    <option value="1mo">1 Month</option>
+                    <option value="6mo">6 Months</option>
+                    <option value="1y" selected>1 Year</option>
+                    <option value="5y">5 Years</option>
+                    <option value="all">MAX</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Auto Train & Predict</label>
+                <select id="predict-days">
+                    <option value="1">Next Day</option>
+                    <option value="7">Next 7 Days</option>
+                    <option value="30" selected>Next 30 Days</option>
+                </select>
+                <button id="btn-predict" class="action-btn pulse">Run AI Prediction</button>
+                <div id="loading-indicator" class="loading-spinner" style="display: none;"></div>
+            </div>
+
+            <div class="control-group">
+                <button id="btn-download" class="action-btn secondary">📥 Download CSV</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Stats Row -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <h3>Current Price</h3>
+                    <p id="stat-current" class="value loading">--</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Daily Growth</h3>
+                    <p id="stat-growth" class="value loading">--</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Highest Price</h3>
+                    <p id="stat-highest" class="value loading">--</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Trend Detection</h3>
+                    <p id="stat-trend" class="value loading">--</p>
+                </div>
+                <div class="stat-card highlight">
+                    <h3>AI Recommendation</h3>
+                    <p id="stat-rec" class="value loading">--</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Volatility (Risk)</h3>
+                    <p id="stat-vol" class="value loading">--</p>
+                </div>
+                <div class="stat-card">
+                    <h3>News Sentiment 📰</h3>
+                    <p id="stat-sentiment" class="value loading">--</p>
+                    <small id="stat-sentiment-score" style="color:var(--text-secondary);font-size:0.75rem;">Score:
+                        --</small>
+                </div>
+            </div>
+
+            <!-- Charts Area -->
+            <div class="charts-area">
+                <div class="chart-card large">
+                    <div class="chart-header">
+                        <h3>Main Price Action & Technical Indicators</h3>
+                        <div class="chart-toggles">
+                            <label><input type="checkbox" id="toggle-ma50" checked> MA50</label>
+                            <label><input type="checkbox" id="toggle-ma200" checked> MA200</label>
+                        </div>
+                    </div>
+                    <div id="main-chart" class="chart-container"></div>
+                </div>
+
+                <div class="bottom-charts">
+                    <div class="chart-card">
+                        <h3>AI Prediction Outlook</h3>
+                        <div id="predict-chart" class="chart-container"></div>
+                        <div id="accuracy-metrics" class="metrics"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>RSI (Overbought/Oversold)</h3>
+                        <div id="rsi-chart" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <!-- PORTFOLIO SECTION -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>Mock Portfolio 💼</h3>
+                    </div>
+                    <div class="portfolio-controls" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <input type="number" id="portfolio-qty" placeholder="Shares (Qty)" style="max-width: 150px;">
+                        <button id="btn-buy-mock" class="action-btn"
+                            style="max-width: 150px; background: var(--success);">Virtual BUY</button>
+                    </div>
+                    <table class="portfolio-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                                <th>Ticker</th>
+                                <th>Qty</th>
+                                <th>Avg Buy Price</th>
+                                <th>Current Price</th>
+                                <th>Unrealized PNL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portfolio-body">
+                            <!-- Populated in JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- GLOBAL MARKET SCREENER SECTION -->
+                <div class="chart-card">
+                    <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Global Market Screener 🌍</h3>
+                        <button id="btn-load-screener" class="action-btn secondary" style="width: auto;">Scan Entire Market</button>
+                    </div>
+                    <div id="screener-loading" class="loading-spinner" style="display: none; margin: 20px auto;"></div>
+                    <table class="portfolio-table" style="width: 100%; text-align: left; border-collapse: collapse; margin-top: 15px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                                <th>Name / Ticker</th>
+                                <th>Real-Time Open</th>
+                                <th>Predicted Close (Today)</th>
+                                <th>Expected Change</th>
+                            </tr>
+                        </thead>
+                        <tbody id="screener-body">
+                            <tr><td colspan="4" style="padding:15px;text-align:center;color:#666;">Click 'Scan Entire Market' to load all top 100 assets.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
